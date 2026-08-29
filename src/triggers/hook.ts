@@ -32,8 +32,15 @@ const flattenDelivery = (raw: unknown, fallbackEvent: string): Record<string, un
   const envelope = normalize<DeliveryEnvelope>(raw ?? {});
   const record = envelope.data && typeof envelope.data === 'object' ? envelope.data : {};
 
+  // Zapier rejects any trigger result without an `id`, so a delivery that arrives
+  // without one - a malformed body, a future event whose payload is not record-shaped -
+  // would fail the whole Zap rather than the single event. Falling back to the delivery
+  // id keeps the run alive and still gives Zapier something unique to work with.
+  const recordId = (record as { id?: unknown }).id;
+
   return {
     ...record,
+    id: recordId ?? envelope.id ?? null,
     event: envelope.event || fallbackEvent,
     deliveredAt: envelope.deliveredAt || null,
     deliveryId: envelope.id || null,
@@ -54,9 +61,13 @@ export const buildHookTrigger = (definition: EventDefinition): Trigger => {
       },
     });
 
-    // Response is an EndpointDto, so PascalCase on the wire; the app-level
-    // afterResponse has already camelCased it by the time we read `id`.
-    return response.data;
+    // Create does not answer with a bare endpoint: it wraps it as
+    // `{ endpoint, secret }` so the signing secret can be shown exactly once. Only the
+    // endpoint is kept - `id` is the handle performUnsubscribe needs, while the secret
+    // has no use here (Zapier's hook URL is itself the shared secret) and storing it
+    // in subscribeData would park a live credential in another system for no reason.
+    const body = (response.data ?? {}) as { endpoint?: Record<string, unknown> } & Record<string, unknown>;
+    return body.endpoint ?? body;
   };
 
   const performUnsubscribe = async (z: ZObject, bundle: Bundle) => {
@@ -66,17 +77,33 @@ export const buildHookTrigger = (definition: EventDefinition): Trigger => {
     // throwing here would leave the Zap undeletable in the editor.
     if (endpointId === undefined || endpointId === null) return {};
 
+    // `hard=true` matters. The default is a soft delete that only flips IsActive, and
+    // the endpoint quota counts rows rather than active ones - so a user who switches a
+    // Zap off and on twenty times would hit "endpoint limit reached" and be unable to
+    // create any more hooks. Zapier never returns to an endpoint it has unsubscribed.
     const response = await z.request({
       url: `${baseUrl(bundle)}/v1/webhooks/${endpointId}`,
       method: 'DELETE',
+      params: { hard: 'true' },
     });
     return response.data ?? {};
   };
 
-  /** Runs on each inbound delivery. Zapier does not de-duplicate hook results. */
-  const perform = async (z: ZObject, bundle: Bundle) => [
-    flattenDelivery(bundle.cleanedRequest, event),
-  ];
+  /**
+   * Runs on each inbound delivery. Zapier does not de-duplicate hook results.
+   *
+   * An empty request body means there is no delivery to report - which happens when
+   * the operation is run outside a real hook, as `zapier invoke` does. Returning no
+   * rows is the honest answer there; inventing one would fail validation for missing
+   * an `id`.
+   */
+  const perform = async (z: ZObject, bundle: Bundle) => {
+    const raw = bundle.cleanedRequest;
+    if (!raw || (typeof raw === 'object' && Object.keys(raw).length === 0)) return [];
+
+    const record = flattenDelivery(raw, event);
+    return record.id === null || record.id === undefined ? [] : [record];
+  };
 
   /**
    * Sample data for the editor's "test trigger" step. A hook has no history to replay,

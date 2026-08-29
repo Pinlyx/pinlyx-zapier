@@ -105,7 +105,10 @@ export const createContact: Create = {
           country: bundle.inputData.country,
           city: bundle.inputData.city,
           notes: bundle.inputData.notes,
-          source: 'zapier',
+          // No `source`: the API parses it into the ContactSource enum, which has no
+          // Zapier member, so sending one is a 400 on every create. Adding the enum
+          // value is an API change and a deploy; until then the API's own default
+          // applies and `externalId` is what ties the record back to its origin.
         }),
       });
       return response.data;

@@ -80,7 +80,7 @@ describe('create contact', () => {
       inputData: { name: 'Ada Lovelace', externalId: 'x-9', email: '', company: undefined },
     });
 
-    expect(body).toEqual({ name: 'Ada Lovelace', externalId: 'x-9', source: 'zapier' });
+    expect(body).toEqual({ name: 'Ada Lovelace', externalId: 'x-9' });
     // And the PascalCase response comes back camelCased for field mapping.
     expect(result).toEqual({ id: 4821, name: 'Ada Lovelace', externalId: 'x-9', leadScore: null });
   });
@@ -94,7 +94,12 @@ describe('rest hooks', () => {
         body = posted;
         return true;
       })
-      .reply(201, { Id: 55, Url: 'https://hooks.zapier.com/abc', EventTypes: ['deal.won'] });
+      // The live API wraps the row: { endpoint, secret }. A bare DTO here would let a
+      // broken performSubscribe pass its test and then strand webhooks in production.
+      .reply(201, {
+        endpoint: { Id: 55, Url: 'https://hooks.zapier.com/abc', EventTypes: ['deal.won'] },
+        secret: 'TjyRp9yXvDfb7JmqahdnX1yLoBdk/5utR7ntU7Oa7Uw=',
+      });
 
     const result = await appTester(app.triggers.deal_won.operation.performSubscribe as never, {
       authData,
@@ -108,10 +113,14 @@ describe('rest hooks', () => {
     // The endpoint id has to survive into subscribeData: it is the only handle
     // performUnsubscribe gets.
     expect(result).toMatchObject({ id: 55 });
+    // The signing secret must not be parked in Zapier's stored subscribeData.
+    expect(result).not.toHaveProperty('secret');
   });
 
   it('deletes the endpoint it created', async () => {
-    const scope = nock(API).delete('/v1/webhooks/55').reply(200, {});
+    // hard=true: the default soft delete leaves the row counting against the user's
+    // endpoint quota, so a Zap toggled off and on repeatedly would exhaust it.
+    const scope = nock(API).delete('/v1/webhooks/55').query({ hard: 'true' }).reply(200, {});
 
     await appTester(
       app.triggers.deal_won.operation.performUnsubscribe as never,
@@ -149,6 +158,26 @@ describe('rest hooks', () => {
       deliveredAt: '2026-08-29T09:14:23Z',
       deliveryId: 'a1b2c3',
     });
+  });
+
+  it('falls back to the delivery id when the payload carries no record id', async () => {
+    // Zapier rejects a trigger result with no `id`, which would fail the whole Zap
+    // rather than the one malformed event.
+    const result = (await appTester(app.triggers.contact_created.operation.perform as never, {
+      authData,
+      cleanedRequest: { event: 'contact.created', id: 'deliv-77', data: {} },
+    })) as Array<Record<string, unknown>>;
+
+    expect(result[0]).toMatchObject({ id: 'deliv-77', deliveryId: 'deliv-77' });
+  });
+
+  it('keeps the record id when the payload has one', async () => {
+    const result = (await appTester(app.triggers.contact_created.operation.perform as never, {
+      authData,
+      cleanedRequest: { event: 'contact.created', id: 'deliv-77', data: { id: 4821 } },
+    })) as Array<Record<string, unknown>>;
+
+    expect(result[0]).toMatchObject({ id: 4821, deliveryId: 'deliv-77' });
   });
 
   it('falls back to the trigger event when a delivery arrives without one', async () => {

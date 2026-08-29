@@ -1,5 +1,5 @@
 import type { Bundle, Create, ZObject } from 'zapier-platform-core';
-import { baseUrl } from '../client';
+import { baseUrl, unwrapList } from '../client';
 import { CONTACT_SAMPLE } from '../triggers/samples';
 
 /**
@@ -40,15 +40,37 @@ export const tagContact: Create = {
     ],
 
     perform: async (z: ZObject, bundle: Bundle) => {
+      const contactId = bundle.inputData.contactId;
+      const tagName = String(bundle.inputData.tagName);
+
       const response = await z.request({
-        url: `${baseUrl(bundle)}/v1/contacts/${bundle.inputData.contactId}/tags`,
+        url: `${baseUrl(bundle)}/v1/contacts/${contactId}/tags`,
         method: 'POST',
-        body: { tagName: bundle.inputData.tagName },
+        body: { tagName },
       });
-      return response.data;
+
+      // The endpoint answers with the contact's whole tag list in a page envelope.
+      // Handing that back raw would give the Zap an `items` array to dig through, so
+      // the tag that was just applied is lifted out and the full set kept alongside.
+      const tags = unwrapList<{ id: number; name?: string; color?: string }>(response.data);
+      const applied = tags.find((t) => (t.name || '').toLowerCase() === tagName.toLowerCase());
+
+      return {
+        id: applied?.id ?? null,
+        contactId,
+        tagName,
+        color: applied?.color ?? null,
+        tags,
+      };
     },
 
-    sample: { id: 2, name: 'VIP', color: '#F59E0B', contactId: 4821 },
+    sample: {
+      id: 2,
+      contactId: 4821,
+      tagName: 'VIP',
+      color: '#F59E0B',
+      tags: [{ id: 2, name: 'VIP', color: '#F59E0B' }],
+    },
   },
 };
 
@@ -78,14 +100,23 @@ export const untagContact: Create = {
     ],
 
     perform: async (z: ZObject, bundle: Bundle) => {
+      const contactId = bundle.inputData.contactId;
+      const tagId = bundle.inputData.tagId;
+
       const response = await z.request({
-        url: `${baseUrl(bundle)}/v1/contacts/${bundle.inputData.contactId}/tags/${bundle.inputData.tagId}`,
+        url: `${baseUrl(bundle)}/v1/contacts/${contactId}/tags/${tagId}`,
         method: 'DELETE',
       });
-      return response.data ?? { contactId: bundle.inputData.contactId, tagId: bundle.inputData.tagId };
+
+      return {
+        id: tagId,
+        contactId,
+        tagId,
+        tags: unwrapList<{ id: number; name?: string }>(response.data),
+      };
     },
 
-    sample: { contactId: 4821, tagId: 2 },
+    sample: { id: 2, contactId: 4821, tagId: 2, tags: [] },
   },
 };
 
