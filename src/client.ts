@@ -83,10 +83,13 @@ export const addAuthentication = (
 ): HttpRequestOptions => {
   request.headers = request.headers || {};
 
-  const apiKey = (bundle.authData?.apiKey || '').trim();
+  // Every whitespace character goes, not just the ends. A key copied across a line
+  // break carries an inner newline that `trim` would leave in place, and the API rejects
+  // the result as a malformed token - which surfaces as a bare 401 with no explanation.
+  const apiKey = (bundle.authData?.apiKey || '').replace(/\s+/g, '');
   if (apiKey) request.headers.Authorization = `Bearer ${apiKey}`;
 
-  const workspaceId = (bundle.authData?.workspaceId || '').trim();
+  const workspaceId = (bundle.authData?.workspaceId || '').replace(/\s+/g, '');
   if (workspaceId) request.headers[WORKSPACE_HEADER] = workspaceId;
 
   request.headers['User-Agent'] = 'CRMSolid-Zapier/1.0';

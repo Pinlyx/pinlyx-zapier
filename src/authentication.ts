@@ -17,7 +17,25 @@ import { baseUrl } from './client';
  * member of several shared workspaces. Left blank, the API falls back to the key
  * owner's own records, which is what a single-workspace account wants.
  */
+/**
+ * A CRM Solid bearer key is `csk_<env>_` followed by exactly 44 characters (a 12-char
+ * key id and a 32-char secret). Checking that here turns the most common setup mistake -
+ * a paste that lost or gained a character - into a message that says so, instead of an
+ * unexplained 401 from the API.
+ */
+const KEY_SHAPE = /^csk_[a-z0-9]+_[A-Za-z0-9]{44}$/;
+
 const test = async (z: ZObject, bundle: Bundle) => {
+  const apiKey = (bundle.authData?.apiKey || '').replace(/\s+/g, '');
+
+  if (!KEY_SHAPE.test(apiKey)) {
+    throw new z.errors.Error(
+      `That does not look like a complete CRM Solid API key. Expected \`csk_live_\` or \`csk_test_\` followed by 44 characters (53 in total); this one has ${apiKey.length}. Copy the whole key from Settings > Developers - it is shown once, when you create it.`,
+      'malformed_api_key',
+      400,
+    );
+  }
+
   const response = await z.request({ url: `${baseUrl(bundle)}/v1/me` });
   return response.data;
 };

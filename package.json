@@ -1,6 +1,6 @@
 {
   "name": "crmsolid-zapier",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "CRM Solid integration for Zapier. Triggers on CRM events and creates contacts, deals, tasks and messages from any of Zapier's 8000+ apps.",
   "private": true,
   "license": "MIT",
@@ -13,7 +13,7 @@
     "node": ">=20",
     "npm": ">=9"
   },
-  "main": "lib/src/index.js",
+  "main": "index.js",
   "scripts": {
     "clean": "rimraf lib",
     "build": "npm run clean && tsc",

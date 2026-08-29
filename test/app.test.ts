@@ -4,7 +4,8 @@ import App from '../src/index';
 
 const appTester = createAppTester(App as never);
 const API = 'https://api.crmsolid.com';
-const authData = { apiKey: 'csk_test_abc123' };
+// Shaped like a real key: csk_<env>_ plus 12 char id and 32 char secret.
+const authData = { apiKey: 'csk_test_abcdefghijkl0123456789abcdef0123456789abcdef' };
 
 // The app definition is typed loosely here on purpose: reaching into
 // `triggers.x.operation.perform` collapses to a union of every operation shape, and
@@ -24,7 +25,7 @@ describe('authentication', () => {
   it('identifies the workspace behind the key', async () => {
     nock(API)
       .get('/v1/me')
-      .matchHeader('authorization', 'Bearer csk_test_abc123')
+      .matchHeader('authorization', 'Bearer csk_test_abcdefghijkl0123456789abcdef0123456789abcdef')
       .reply(200, { id: 17, email: 'ada@analytical.co', name: 'Ada Lovelace' });
 
     const result = await appTester(App.authentication.test as never, { authData });
@@ -36,6 +37,25 @@ describe('authentication', () => {
 
     const result = await appTester(App.authentication.test as never, {
       authData: { ...authData, workspaceId: '42' },
+    });
+    expect(result).toMatchObject({ id: 17 });
+  });
+
+  it('rejects a truncated key before spending a request on it', async () => {
+    // No nock interceptor: reaching the network here would itself be the failure.
+    await expect(
+      appTester(App.authentication.test as never, { authData: { apiKey: 'csk_live_tooshort' } }),
+    ).rejects.toThrow(/does not look like a complete CRM Solid API key/);
+  });
+
+  it('accepts a key that was pasted across a line break', async () => {
+    nock(API)
+      .get('/v1/me')
+      .matchHeader('authorization', 'Bearer csk_test_abcdefghijkl0123456789abcdef0123456789abcdef')
+      .reply(200, { id: 17 });
+
+    const result = await appTester(App.authentication.test as never, {
+      authData: { apiKey: 'csk_test_abcdefghijkl012345678\n 9abcdef0123456789abcdef' },
     });
     expect(result).toMatchObject({ id: 17 });
   });
