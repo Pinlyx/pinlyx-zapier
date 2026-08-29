@@ -1,0 +1,36 @@
+{
+  "name": "crmsolid-zapier",
+  "version": "1.0.0",
+  "description": "CRM Solid integration for Zapier. Triggers on CRM events and creates contacts, deals, tasks and messages from any of Zapier's 8000+ apps.",
+  "private": true,
+  "license": "MIT",
+  "homepage": "https://crmsolid.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CRM-Solid/crmsolid-zapier.git"
+  },
+  "engines": {
+    "node": ">=20",
+    "npm": ">=9"
+  },
+  "main": "lib/src/index.js",
+  "scripts": {
+    "clean": "rimraf lib",
+    "build": "npm run clean && tsc",
+    "_zapier-build": "npm run build",
+    "test": "npm run build && jest --testPathPattern=lib/test",
+    "watch": "tsc --watch"
+  },
+  "dependencies": {
+    "zapier-platform-core": "19.1.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.0",
+    "jest": "^29.7.0",
+    "nock": "^13.5.6",
+    "rimraf": "^5.0.7",
+    "typescript": "^5.5.4",
+    "zapier-platform-cli": "^19.1.0"
+  }
+}
