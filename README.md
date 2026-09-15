@@ -1,6 +1,6 @@
-# CRM Solid for Zapier
+# Pinlyx for Zapier
 
-The Zapier integration for [CRM Solid](https://crmsolid.com). Built on the public v1
+The Zapier integration for [Pinlyx](https://pinlyx.com). Built on the public v1
 REST API and the self-service webhook system, so it adds no server-side surface of its
 own: everything here is a client.
 
@@ -21,7 +21,7 @@ npm run build     # tsc -> lib/
 ```bash
 ./node_modules/.bin/zapier-platform validate   # schema + Zapier's publishing checks
 ./node_modules/.bin/zapier-platform login
-./node_modules/.bin/zapier-platform register "CRM Solid"   # first time only
+./node_modules/.bin/zapier-platform register "Pinlyx"   # first time only
 ./node_modules/.bin/zapier-platform push
 ```
 
