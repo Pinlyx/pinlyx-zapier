@@ -7,7 +7,7 @@
   "homepage": "https://pinlyx.com",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CRM-Solid/pinlyx-zapier.git"
+    "url": "git+https://github.com/Pinlyx/pinlyx-zapier.git"
   },
   "engines": {
     "node": ">=20",
