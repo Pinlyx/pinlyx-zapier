@@ -88,7 +88,7 @@ export const changeDealStage: Create = {
   display: {
     label: 'Move Deal to Stage',
     description:
-      'Moves a deal to another stage. Marking a deal won books revenue, so that has to be done in CRM Solid rather than from a Zap.',
+      'Moves a deal to another stage. Marking a deal won books revenue, so that has to be done in Pinlyx rather than from a Zap.',
   },
   operation: {
     inputFields: [

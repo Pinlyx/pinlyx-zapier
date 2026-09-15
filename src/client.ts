@@ -1,7 +1,7 @@
 import type { Bundle, HttpRequestOptions, HttpResponse, ZObject } from 'zapier-platform-core';
 
 /**
- * Talking to the CRM Solid public API from Zapier.
+ * Talking to the Pinlyx public API from Zapier.
  *
  * Two things about the API shape drive everything in this file:
  *
@@ -119,7 +119,7 @@ export const handleErrors = (response: HttpResponse, z: ZObject): HttpResponse =
   // instead of retrying a key that will never start working again.
   if (response.status === 401) {
     throw new z.errors.ExpiredAuthError(
-      `CRM Solid rejected the API key: ${message}. Reconnect this account with a key from Settings > Developers.`,
+      `Pinlyx rejected the API key: ${message}. Reconnect this account with a key from Settings > Developers.`,
     );
   }
 
@@ -127,7 +127,7 @@ export const handleErrors = (response: HttpResponse, z: ZObject): HttpResponse =
   // permanent for this key, so say which one it is rather than "403".
   if (response.status === 403) {
     throw new z.errors.Error(
-      `CRM Solid refused this action: ${message}. Check that the API key carries the required scope and that your workspace role allows writes.`,
+      `Pinlyx refused this action: ${message}. Check that the API key carries the required scope and that your workspace role allows writes.`,
       'forbidden',
       response.status,
     );
@@ -135,7 +135,7 @@ export const handleErrors = (response: HttpResponse, z: ZObject): HttpResponse =
 
   if (response.status === 429) {
     const retryAfter = Number(response.getHeader?.('retry-after') || 0);
-    throw new z.errors.ThrottledError(`CRM Solid rate limit reached: ${message}`, retryAfter || 60);
+    throw new z.errors.ThrottledError(`Pinlyx rate limit reached: ${message}`, retryAfter || 60);
   }
 
   throw new z.errors.Error(message, 'crmsolid_api_error', response.status);

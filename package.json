@@ -1,13 +1,13 @@
 {
   "name": "crmsolid-zapier",
   "version": "1.0.3",
-  "description": "CRM Solid integration for Zapier. Triggers on CRM events and creates contacts, deals, tasks and messages from any of Zapier's 8000+ apps.",
+  "description": "Pinlyx integration for Zapier. Triggers on CRM events and creates contacts, deals, tasks and messages from any of Zapier's 8000+ apps.",
   "private": true,
   "license": "MIT",
-  "homepage": "https://crmsolid.com",
+  "homepage": "https://pinlyx.com",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CRM-Solid/crmsolid-zapier.git"
+    "url": "git+https://github.com/CRM-Solid/pinlyx-zapier.git"
   },
   "engines": {
     "node": ">=20",

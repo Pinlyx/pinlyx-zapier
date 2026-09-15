@@ -45,7 +45,7 @@ describe('authentication', () => {
     // No nock interceptor: reaching the network here would itself be the failure.
     await expect(
       appTester(App.authentication.test as never, { authData: { apiKey: 'csk_live_tooshort' } }),
-    ).rejects.toThrow(/does not look like a complete CRM Solid API key/);
+    ).rejects.toThrow(/does not look like a complete Pinlyx API key/);
   });
 
   it('accepts a key that was pasted across a line break', async () => {

@@ -181,7 +181,7 @@ export const assignContact: Create = {
         type: 'integer',
         required: false,
         helpText:
-          'The numeric user id of the team member. Find it in CRM Solid under Settings > Team. Leave blank to unassign the contact.',
+          'The numeric user id of the team member. Find it in Pinlyx under Settings > Team. Leave blank to unassign the contact.',
       },
     ],
 
